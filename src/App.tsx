@@ -12,12 +12,14 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('cover')
   const [session, setSession] = useState<Session | null>(null)
   const [newRecord, setNewRecord] = useState(false)
+  const [savedScore, setSavedScore] = useState(false)
   const [playId, setPlayId] = useState(0)
 
   function start(category: Category, difficulty: Difficulty) {
     setPlayId((value) => value + 1)
     setSession(createSession(category, difficulty))
     setNewRecord(false)
+    setSavedScore(false)
     setScreen('game')
   }
 
@@ -37,18 +39,19 @@ export default function App() {
     })
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (!session) return
     const isLast = session.index >= session.queue.length - 1
     if (isLast) {
       const total = session.queue.length
-      const improved = rememberRecord(session.category, session.difficulty, {
+      const result = await rememberRecord(session.category, session.difficulty, {
         score: session.score,
         percent: percentOf(session.correctCount, total),
         correct: session.correctCount,
         total,
       })
-      setNewRecord(improved)
+      setNewRecord(result.improved)
+      setSavedScore(result.saved)
       setScreen('result')
       return
     }
@@ -87,6 +90,7 @@ export default function App() {
         <ResultPage
           session={session}
           isNewRecord={newRecord}
+          saved={savedScore}
           onReplay={() => start(session.category, session.difficulty)}
           onMenu={() => setScreen('select')}
           onCover={() => {

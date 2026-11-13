@@ -1,43 +1,45 @@
 import type { ScoreRecord } from '../types.ts'
 
-const STORAGE_KEY = 'nuestra-aventura-records'
-
-function emptyRecords(): Record<string, ScoreRecord> {
-  return {}
+export interface SavedScore {
+  improved: boolean
+  saved: boolean
 }
 
 export function recordKey(category: string, difficulty: string): string {
   return `${category}:${difficulty}`
 }
 
-export function readRecords(): Record<string, ScoreRecord> {
+interface ScoreFile {
+  records: Record<string, ScoreRecord>
+  sessions: unknown[]
+}
+
+export async function readRecords(): Promise<Record<string, ScoreRecord>> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return emptyRecords()
-    const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') return emptyRecords()
-    return parsed as Record<string, ScoreRecord>
+    const response = await fetch('/api/scores')
+    if (!response.ok) return {}
+    const data = (await response.json()) as ScoreFile
+    return data.records ?? {}
   } catch {
-    return emptyRecords()
+    return {}
   }
 }
 
-export function rememberRecord(
+export async function rememberRecord(
   category: string,
   difficulty: string,
   entry: ScoreRecord,
-): boolean {
-  const all = readRecords()
-  const key = recordKey(category, difficulty)
-  const previous = all[key]
-  const improved = previous ? entry.score > previous.score : entry.score > 0
-  if (!previous || entry.score > previous.score) {
-    all[key] = entry
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
-    } catch {
-      return false
-    }
+): Promise<SavedScore> {
+  try {
+    const response = await fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, difficulty, ...entry }),
+    })
+    if (!response.ok) return { improved: false, saved: false }
+    const data = (await response.json()) as { improved?: boolean }
+    return { improved: Boolean(data.improved), saved: true }
+  } catch {
+    return { improved: false, saved: false }
   }
-  return improved
 }

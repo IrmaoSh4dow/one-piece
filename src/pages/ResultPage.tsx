@@ -7,12 +7,20 @@ import { percentOf } from '../utils/session.ts'
 interface ResultPageProps {
   session: Session
   isNewRecord: boolean
+  saved: boolean
   onReplay: () => void
   onMenu: () => void
   onCover: () => void
 }
 
-export function ResultPage({ session, isNewRecord, onReplay, onMenu, onCover }: ResultPageProps) {
+export function ResultPage({
+  session,
+  isNewRecord,
+  saved,
+  onReplay,
+  onMenu,
+  onCover,
+}: ResultPageProps) {
   const total = session.queue.length
   const percent = percentOf(session.correctCount, total)
   const level = difficultyById(session.difficulty)
@@ -54,6 +62,7 @@ export function ResultPage({ session, isNewRecord, onReplay, onMenu, onCover }: 
           </div>
         </div>
         {isNewRecord && <p className="record">Nueva mejor marca de este rumbo.</p>}
+        {saved && <p className="saved-note">La puntuación quedó guardada en la bitácora.</p>}
         <p className="closing-note">{closingNote(percent)}</p>
         <blockquote>
           No importa cuántos misterios del Grand Line descubras, mi aventura favorita siempre será la que vivo contigo. ❤️
